@@ -187,8 +187,7 @@ class AssetsBundle(object):
 
     @func.lazy_property
     def version(self):
-        return "latest"
-        # return self.checksum[0:7]
+        return self.checksum[0:7]
 
     @func.lazy_property
     def checksum(self):
