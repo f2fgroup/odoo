@@ -250,6 +250,7 @@ class frozendict(dict):
 ####################################
 ###             QWeb             ###
 ####################################
+WEB_CACHE = {}
 
 
 class QWeb(object):
@@ -272,7 +273,35 @@ class QWeb(object):
               profile line with time ms >= profile)
         """
         body = []
-        self.compile(template, options)(self, body.append, values or {})
+        key = False
+        _logger.info("Request page %s (%s)" %
+                     (request.httprequest.path, request.session.uid))
+        now = time.time()
+        if request and request.httprequest:
+            key = request.httprequest.path
+            if request and request.session and request.session.uid:
+                key = False
+
+        if key and key in WEB_CACHE:
+            start = WEB_CACHE[key][1]
+            if now - start > 60:
+                del WEB_CACHE[key]
+
+        if not key or not key in WEB_CACHE:
+            try:
+                self.compile(template, options)(
+                    self, body.append, values or {})
+                if key:
+                    WEB_CACHE[key] = [body, now]
+            except Exception as err:
+                if key in WEB_CACHE:
+                    _logger.error(err)
+                    body = WEB_CACHE[key][0]
+                else:
+                    raise err
+        else:
+            body = WEB_CACHE[key][0]
+
         return u''.join(body).encode('utf8')
 
     def compile(self, template, options):
