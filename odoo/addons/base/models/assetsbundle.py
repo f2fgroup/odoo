@@ -30,6 +30,13 @@ _logger = logging.getLogger(__name__)
 MAX_CSS_RULES = 4095
 
 
+try:
+    ASSET_VERSION = os.environ.get('ASSET_VERSION', 'latest')
+except:
+    ASSET_VERSION = 'latest'
+    _logger.error('Unable to parse ASSET_VERSION')
+
+
 class CompileError(RuntimeError): pass
 def rjsmin(script):
     """ Minify js with a clever regex.
@@ -187,7 +194,8 @@ class AssetsBundle(object):
 
     @func.lazy_property
     def version(self):
-        return self.checksum[0:7]
+        #return self.checksum[0:7]
+        return ASSET_VERSION
 
     @func.lazy_property
     def checksum(self):
