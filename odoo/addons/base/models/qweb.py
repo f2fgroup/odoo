@@ -12,7 +12,8 @@ from textwrap import dedent
 
 import time
 from odoo.http import request
-from odoo import tools
+import os
+import json
 
 import itertools
 from lxml import etree, html
@@ -256,7 +257,7 @@ class frozendict(dict):
 ####################################
 WEB_CACHE = {}
 try:
-    WEB_CACHE_TIMEOUT = int(float(tools.config['web_cache_timeout']))
+    WEB_CACHE_TIMEOUT = int(os.environ.get('WEB_CACHE_TIMEOUT', 120))
 except:
     WEB_CACHE_TIMEOUT = 120
     _logger.error('Unable to parser cache timeout web_cache_timeout')
@@ -290,15 +291,18 @@ class QWeb(object):
                 key = False
             else:
                 key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key + ('@%s' % template)
+                if values:
+                    key += ':%s' % hash(json.dumps(values, default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>", sort_keys=True))
 
-            _logger.info("Request page %s (%s)" %
-                        (key, request.session.uid if request.session else None))
 
         if key and key in WEB_CACHE:
             found = True
             start = WEB_CACHE[key][1]
             if now - start > WEB_CACHE_TIMEOUT:
                 found = False
+                _logger.info("Cache timeout cache %s" % key)
+            else:
+                _logger.info("Serve page cache %s" % key)
 
         if not found:
             try:
@@ -306,6 +310,7 @@ class QWeb(object):
                     self, body.append, values or {})
                 if key:
                     WEB_CACHE[key] = [body, now]
+                    _logger.info("Save page cache %s" % key)
             except Exception as err:
                 if key in WEB_CACHE:
                     _logger.error(err)
