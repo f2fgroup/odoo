@@ -289,7 +289,7 @@ class QWeb(object):
             if request and request.session and request.session.uid:
                 key = False
             else:
-                key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key
+                key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key + ('@%s' % template)
 
             _logger.info("Request page %s (%s)" %
                         (key, request.session.uid if request.session else None))
