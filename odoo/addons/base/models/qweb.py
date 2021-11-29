@@ -10,6 +10,10 @@ from functools import reduce
 from itertools import tee, count
 from textwrap import dedent
 
+import time
+from odoo.http import request
+from odoo import tools
+
 import itertools
 from lxml import etree, html
 from psycopg2.extensions import TransactionRollbackError
@@ -251,7 +255,11 @@ class frozendict(dict):
 ###             QWeb             ###
 ####################################
 WEB_CACHE = {}
-
+try:
+    WEB_CACHE_TIMEOUT = int(float(tools.config['web_cache_timeout']))
+except:
+    WEB_CACHE_TIMEOUT = 120
+    _logger.error('Unable to parser cache timeout web_cache_timeout')
 
 class QWeb(object):
 
@@ -274,20 +282,25 @@ class QWeb(object):
         """
         body = []
         key = False
-        _logger.info("Request page %s (%s)" %
-                     (request.httprequest.path, request.session.uid))
+        found = False
         now = time.time()
-        if request and request.httprequest:
+        if WEB_CACHE_TIMEOUT > 0 and request and request.httprequest:
             key = request.httprequest.path
             if request and request.session and request.session.uid:
                 key = False
+            else:
+                key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key
+
+            _logger.info("Request page %s (%s)" %
+                        (key, request.session.uid if request.session else None))
 
         if key and key in WEB_CACHE:
+            found = True
             start = WEB_CACHE[key][1]
-            if now - start > 60:
-                del WEB_CACHE[key]
+            if now - start > WEB_CACHE_TIMEOUT:
+                found = False
 
-        if not key or not key in WEB_CACHE:
+        if not found:
             try:
                 self.compile(template, options)(
                     self, body.append, values or {})
