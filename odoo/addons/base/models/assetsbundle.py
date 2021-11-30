@@ -31,9 +31,20 @@ MAX_CSS_RULES = 4095
 
 
 try:
-    ASSET_VERSION = os.environ.get('ASSET_VERSION', 'latest')
+    from odoo.addons.server_environment import serv_config
+    if serv_config.has_section('queue_job'):
+        queue_job_config = serv_config['queue_job']
+    else:
+        queue_job_config = {}
+except ImportError:
+    from odoo.tools import config
+    queue_job_config = config.misc.get('queue_job', {})
+
+
+try:
+    ASSET_VERSION = os.environ.get('ASSET_VERSION', '')
 except:
-    ASSET_VERSION = 'latest'
+    ASSET_VERSION = ''
     _logger.error('Unable to parse ASSET_VERSION')
 
 
@@ -194,8 +205,10 @@ class AssetsBundle(object):
 
     @func.lazy_property
     def version(self):
-        #return self.checksum[0:7]
-        return ASSET_VERSION
+        if ASSET_VERSION:
+            return ASSET_VERSION
+        else:
+            return self.checksum[0:7]
 
     @func.lazy_property
     def checksum(self):

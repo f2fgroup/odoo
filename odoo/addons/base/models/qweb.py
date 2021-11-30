@@ -11,6 +11,7 @@ from itertools import tee, count
 from textwrap import dedent
 
 import time
+from odoo import http
 from odoo.http import request
 import os
 import json
@@ -287,13 +288,11 @@ class QWeb(object):
         now = time.time()
         if WEB_CACHE_TIMEOUT > 0 and request and request.httprequest:
             key = request.httprequest.path
-            if request and request.session and request.session.uid:
-                key = False
-            else:
-                key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key + ('@%s' % template)
-                if values:
-                    key += ':%s' % hash(json.dumps(values, default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>", sort_keys=True))
-
+            key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key + ('@%s' % template)
+            if values:
+                key += ':%s' % hash(json.dumps(values, default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>", sort_keys=True))
+            if 'website' in values:
+                key = 'web-%s>%s' % (values['website'].id, key)
 
         if key and key in WEB_CACHE:
             found = True
