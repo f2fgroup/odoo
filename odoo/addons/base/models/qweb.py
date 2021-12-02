@@ -9,12 +9,7 @@ from collections import OrderedDict, Sized, Mapping
 from functools import reduce
 from itertools import tee, count
 from textwrap import dedent
-
-import time
-from odoo import http
-from odoo.http import request
 import os
-import types
 
 import itertools
 from lxml import etree, html
@@ -256,43 +251,6 @@ class frozendict(dict):
 ####################################
 ###             QWeb             ###
 ####################################
-WEB_CACHE = {}
-try:
-    WEB_CACHE_TIMEOUT = int(os.environ.get('WEB_CACHE_TIMEOUT', 120))
-except:
-    WEB_CACHE_TIMEOUT = 120
-    _logger.error('Unable to parser cache timeout web_cache_timeout')
-
-ignore_sys_keys = ["env", "cr"]
-
-
-import hashlib
-import re
-
-def dump_obj(obj, level = 0):
-    buffer = "%s" % obj
-    buffer = re.sub('\<[^>]+0x[^>]+\>', 'object', buffer)
-    #_logger.info("Dump cache key %s" % buffer)
-    return buffer
-    if level > 3:
-        return "<too deep>"
-    buffer = ""
-    if not isinstance(obj, (list, tuple)) and hasattr(obj, "keys"):
-        for key in obj.keys():
-            if key not in ignore_sys_keys:
-                value = obj[key]
-                if not isinstance(value, object):
-                    buffer += "\n%s: %s" % (key, value)
-                else:
-                    sub_dump = dump_obj(value, level + 1)
-                    if not " at 0x" in sub_dump:
-                        buffer += "\n%s: {%s\n}" % (key, sub_dump)
-                    else:
-                        buffer += "\n%s: <instance>" % (key)
-    else:
-        buffer = "%s" % obj
-    return buffer
- 
 
 class QWeb(object):
 
@@ -314,41 +272,8 @@ class QWeb(object):
               profile line with time ms >= profile)
         """
         body = []
-        key = False
-        found = False
-        now = time.time()
-        if WEB_CACHE_TIMEOUT > 0 and request and request.httprequest:
-            key = request.httprequest.path
-            key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key + ('@%s' % template)
-            if values:
-                values_dump = dump_obj(values)
-                key = '%s => %s' % (template, hashlib.md5(values_dump.encode()).hexdigest())
-
-        if key and key in WEB_CACHE:
-            found = True
-            start = WEB_CACHE[key][1]
-            if now - start > WEB_CACHE_TIMEOUT:
-                found = False
-                _logger.info("Cache timeout cache %s" % key)
-            else:
-                _logger.info("Serve page cache %s" % key)
-
-        if not found:
-            try:
-                self.compile(template, options)(
-                    self, body.append, values or {})
-                if key:
-                    WEB_CACHE[key] = [body, now]
-                    _logger.info("Save page cache %s" % key)
-            except Exception as err:
-                if key in WEB_CACHE:
-                    _logger.error(err)
-                    body = WEB_CACHE[key][0]
-                else:
-                    raise err
-        else:
-            body = WEB_CACHE[key][0]
-
+        self.compile(template, options)(
+            self, body.append, values or {})
         return u''.join(body).encode('utf8')
 
     def compile(self, template, options):
