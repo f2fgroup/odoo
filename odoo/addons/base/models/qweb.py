@@ -14,7 +14,7 @@ import time
 from odoo import http
 from odoo.http import request
 import os
-import json
+import types
 
 import itertools
 from lxml import etree, html
@@ -263,18 +263,34 @@ except:
     WEB_CACHE_TIMEOUT = 120
     _logger.error('Unable to parser cache timeout web_cache_timeout')
 
-import types
+ignore_sys_keys = ["env", "cr"]
 
-def dump_obj(obj, level=0):
+
+import hashlib
+import re
+
+def dump_obj(obj, level = 0):
+    buffer = "%s" % obj
+    buffer = re.sub('\<[^>]+0x[^>]+\>', 'object', buffer)
+    #_logger.info("Dump cache key %s" % buffer)
+    return buffer
+    if level > 3:
+        return "<too deep>"
     buffer = ""
-    for key, value in obj.__dict__.items():
-        if not isinstance(value, types.InstanceType):
-            buffer += "\n(%s) %s: %s" % (level, key, value)
-        else:
-            is_module = isinstance(value, types.ModuleType)
-            is_function = not is_module and isinstance(value, (types.FunctionType, types.BuiltinFunctionType, types.MethodType, types.BuiltinMethodType, types.UnboundMethodType))
-            if not is_module and not is_function:
-                buffer += "\n(%s) %s: {%s\n}" % (level, key, dump_obj(value, level + 1))
+    if not isinstance(obj, (list, tuple)) and hasattr(obj, "keys"):
+        for key in obj.keys():
+            if key not in ignore_sys_keys:
+                value = obj[key]
+                if not isinstance(value, object):
+                    buffer += "\n%s: %s" % (key, value)
+                else:
+                    sub_dump = dump_obj(value, level + 1)
+                    if not " at 0x" in sub_dump:
+                        buffer += "\n%s: {%s\n}" % (key, sub_dump)
+                    else:
+                        buffer += "\n%s: <instance>" % (key)
+    else:
+        buffer = "%s" % obj
     return buffer
  
 
@@ -306,11 +322,7 @@ class QWeb(object):
             key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key + ('@%s' % template)
             if values:
                 values_dump = dump_obj(values)
-                _logger.info("Dump cache key %s" % values_dump)
-                key += ':%s' % hash(values_dump)
-
-            #if 'website' in values:
-            #    key = 'web-%s>%s' % (values['website'].id, key)
+                key = '%s => %s' % (template, hashlib.md5(values_dump.encode()).hexdigest())
 
         if key and key in WEB_CACHE:
             found = True
