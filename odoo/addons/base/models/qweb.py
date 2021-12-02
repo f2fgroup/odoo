@@ -263,6 +263,21 @@ except:
     WEB_CACHE_TIMEOUT = 120
     _logger.error('Unable to parser cache timeout web_cache_timeout')
 
+import types
+
+def dump_obj(obj, level=0):
+    buffer = ""
+    for key, value in obj.__dict__.items():
+        if not isinstance(value, types.InstanceType):
+            buffer += "\n(%s) %s: %s" % (level, key, value)
+        else:
+            is_module = isinstance(value, types.ModuleType)
+            is_function = not is_module and isinstance(value, (types.FunctionType, types.BuiltinFunctionType, types.MethodType, types.BuiltinMethodType, types.UnboundMethodType))
+            if not is_module and not is_function:
+                buffer += "\n(%s) %s: {%s\n}" % (level, key, dump_obj(value, level + 1))
+    return buffer
+ 
+
 class QWeb(object):
 
     _void_elements = frozenset([
@@ -290,9 +305,12 @@ class QWeb(object):
             key = request.httprequest.path
             key = request.httprequest.environ.get('HTTP_HOST').split(':')[0] + key + ('@%s' % template)
             if values:
-                key += ':%s' % hash(json.dumps(values, default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>", sort_keys=True))
-            if 'website' in values:
-                key = 'web-%s>%s' % (values['website'].id, key)
+                values_dump = dump_obj(values)
+                _logger.info("Dump cache key %s" % values_dump)
+                key += ':%s' % hash(values_dump)
+
+            #if 'website' in values:
+            #    key = 'web-%s>%s' % (values['website'].id, key)
 
         if key and key in WEB_CACHE:
             found = True
