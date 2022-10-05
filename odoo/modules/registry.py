@@ -535,7 +535,7 @@ class Registry(Mapping):
         table2model = {
             model._table: name
             for name, model in env.items()
-            if not model._abstract and model.__class__._table_query is None
+            if not model._abstract and model.__class__._table_query is None and "x_bi_sql_view" not in model._name
         }
         missing_tables = set(table2model).difference(existing_tables(cr, table2model))
 
