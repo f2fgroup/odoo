@@ -386,7 +386,7 @@ class Route(models.Model):
     _name = 'stock.location.route'
     _description = "Inventory Routes"
     _order = 'sequence'
-    _check_company_auto = True
+    _check_company_auto = False
 
     name = fields.Char('Route', required=True, translate=True)
     active = fields.Boolean('Active', default=True, help="If the active field is set to False, it will allow you to hide the route without removing it.")
