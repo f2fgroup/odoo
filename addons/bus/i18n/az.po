@@ -3,6 +3,7 @@
 # 	* bus
 # 
 # Translators:
+# erpgo translator <jumshud@erpgo.az>, 2022
 # Jumshud Sultanov <cumshud@gmail.com>, 2022
 # 
 msgid ""
@@ -27,17 +28,17 @@ msgstr ""
 #. module: bus
 #: model:ir.model.fields.selection,name:bus.selection__bus_presence__status__away
 msgid "Away"
-msgstr ""
+msgstr "Uzaq"
 
 #. module: bus
 #: model:ir.model.fields,field_description:bus.field_bus_bus__channel
 msgid "Channel"
-msgstr ""
+msgstr "Kanal"
 
 #. module: bus
 #: model:ir.model,name:bus.model_bus_bus
 msgid "Communication Bus"
-msgstr ""
+msgstr "Kommunikasiya Şini"
 
 #. module: bus
 #: model:ir.model,name:bus.model_res_partner
@@ -64,7 +65,7 @@ msgstr "Ekran Adı"
 #: model:ir.model.fields,field_description:bus.field_bus_bus__id
 #: model:ir.model.fields,field_description:bus.field_bus_presence__id
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #. module: bus
 #: model:ir.model.fields,field_description:bus.field_bus_presence__status
@@ -82,12 +83,12 @@ msgstr "Son Dəyişdirilmə tarixi"
 #. module: bus
 #: model:ir.model.fields,field_description:bus.field_bus_presence__last_poll
 msgid "Last Poll"
-msgstr ""
+msgstr "Son Sorğu- sual"
 
 #. module: bus
 #: model:ir.model.fields,field_description:bus.field_bus_presence__last_presence
 msgid "Last Presence"
-msgstr ""
+msgstr "Son İştirak"
 
 #. module: bus
 #: model:ir.model.fields,field_description:bus.field_bus_bus__write_uid
@@ -102,17 +103,17 @@ msgstr "Son Yenilənmə tarixi"
 #. module: bus
 #: model:ir.model.fields,field_description:bus.field_bus_bus__message
 msgid "Message"
-msgstr ""
+msgstr "Mesaj"
 
 #. module: bus
 #: model:ir.model.fields.selection,name:bus.selection__bus_presence__status__offline
 msgid "Offline"
-msgstr ""
+msgstr "Oflayn"
 
 #. module: bus
 #: model:ir.model.fields.selection,name:bus.selection__bus_presence__status__online
 msgid "Online"
-msgstr ""
+msgstr "Onlayn"
 
 #. module: bus
 #. openerp-web
@@ -132,7 +133,7 @@ msgstr ""
 #. module: bus
 #: model:ir.model,name:bus.model_bus_presence
 msgid "User Presence"
-msgstr ""
+msgstr "İstifadəçi İştirakı"
 
 #. module: bus
 #: model:ir.model,name:bus.model_res_users
@@ -144,4 +145,4 @@ msgstr "İstifadəçilər"
 #: code:addons/bus/controllers/main.py:0
 #, python-format
 msgid "bus.Bus not available in test mode"
-msgstr ""
+msgstr "informasiya kanalı: informasiya kanalında test modu mövcud deyil"

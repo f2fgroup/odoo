@@ -4,6 +4,7 @@
 # 
 # Translators:
 # Jumshud Sultanov <cumshud@gmail.com>, 2022
+# erpgo translator <jumshud@erpgo.az>, 2022
 # 
 msgid ""
 msgstr ""
@@ -11,7 +12,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-09-14 10:28+0000\n"
 "PO-Revision-Date: 2021-09-14 12:21+0000\n"
-"Last-Translator: Jumshud Sultanov <cumshud@gmail.com>, 2022\n"
+"Last-Translator: erpgo translator <jumshud@erpgo.az>, 2022\n"
 "Language-Team: Azerbaijani (https://www.transifex.com/odoo/teams/41243/az/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -259,12 +260,12 @@ msgstr "Şirkət"
 #: code:addons/coupon/models/coupon.py:0
 #, python-format
 msgid "Compose Email"
-msgstr ""
+msgstr "Email tərtib et"
 
 #. module: coupon
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_program_view_form_common
 msgid "Conditions"
-msgstr ""
+msgstr "Şərtlər"
 
 #. module: coupon
 #: model_terms:ir.ui.view,arch_db:coupon.report_coupon
@@ -353,7 +354,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_view_form
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_view_tree
 msgid "Coupons"
-msgstr ""
+msgstr "Kuponlar"
 
 #. module: coupon
 #: model_terms:ir.actions.act_window,help:coupon.coupon_program_action_coupon_program
@@ -397,7 +398,7 @@ msgstr "Müştəri"
 #: model:ir.model.fields,help:coupon.field_coupon_program__reward_product_uom_id
 #: model:ir.model.fields,help:coupon.field_coupon_reward__reward_product_uom_id
 msgid "Default unit of measure used for all stock operations."
-msgstr ""
+msgstr "Bütün anbar əməliyyatları üçün istifadə olunan standart ölçü vahidi."
 
 #. module: coupon
 #: model:ir.model.fields,field_description:coupon.field_coupon_program__discount_percentage
@@ -451,7 +452,7 @@ msgstr "Ekran Adı"
 #. module: coupon
 #: model:ir.model,name:coupon.model_mail_compose_message
 msgid "Email composition wizard"
-msgstr ""
+msgstr "Email tərtibi sehrbazı"
 
 #. module: coupon
 #: model:ir.model.fields,field_description:coupon.field_coupon_program__rule_date_to
@@ -462,13 +463,13 @@ msgstr "Bitmə Tarixi"
 #. module: coupon
 #: model:ir.model.fields,field_description:coupon.field_coupon_coupon__expiration_date
 msgid "Expiration Date"
-msgstr ""
+msgstr "Son İstifadə Tarixi"
 
 #. module: coupon
 #: model:ir.model.fields.selection,name:coupon.selection__coupon_coupon__state__expired
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_program_view_search
 msgid "Expired"
-msgstr ""
+msgstr "Vaxtı bitmiş"
 
 #. module: coupon
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_program_view_search
@@ -510,7 +511,7 @@ msgstr ""
 #. module: coupon
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_generate_view_form
 msgid "Generate"
-msgstr ""
+msgstr "Yaratmaq "
 
 #. module: coupon
 #: model:ir.model,name:coupon.model_coupon_generate_wizard
@@ -557,7 +558,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:coupon.field_coupon_reward__id
 #: model:ir.model.fields,field_description:coupon.field_coupon_rule__id
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #. module: coupon
 #: code:addons/coupon/models/coupon.py:0
@@ -595,7 +596,7 @@ msgstr "Son Yenilənmə tarixi"
 #. module: coupon
 #: model_terms:ir.ui.view,arch_db:coupon.report_coupon
 msgid "Logo"
-msgstr ""
+msgstr "Loqotip"
 
 #. module: coupon
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_program_view_form_common
@@ -712,7 +713,7 @@ msgstr ""
 #. module: coupon
 #: model:ir.model.fields.selection,name:coupon.selection__coupon_coupon__state__reserved
 msgid "Pending"
-msgstr ""
+msgstr "Gözləmədədir"
 
 #. module: coupon
 #: model:ir.model.fields.selection,name:coupon.selection__coupon_reward__discount_type__percentage
@@ -894,7 +895,7 @@ msgstr ""
 #. module: coupon
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_view_form
 msgid "Send by Email"
-msgstr ""
+msgstr "Emaillə Göndər"
 
 #. module: coupon
 #: model:ir.model.fields.selection,name:coupon.selection__coupon_coupon__state__sent
@@ -927,7 +928,7 @@ msgstr "Başlanğıc Tarixi"
 #. module: coupon
 #: model:ir.model.fields,field_description:coupon.field_coupon_coupon__state
 msgid "State"
-msgstr ""
+msgstr "Bölgə"
 
 #. module: coupon
 #: model:ir.model.fields.selection,name:coupon.selection__coupon_rule__rule_minimum_amount_tax_inclusion__tax_excluded
@@ -1020,7 +1021,7 @@ msgstr "Ölçü  Vahidi"
 #: model:product.template,uom_name:coupon.product_product_10_percent_discount_product_template
 #: model:product.template,uom_name:coupon.product_product_free_large_cabinet_product_template
 msgid "Units"
-msgstr ""
+msgstr "Vahidlər"
 
 #. module: coupon
 #: model:ir.model.fields.selection,name:coupon.selection__coupon_program__promo_code_usage__code_needed
@@ -1056,7 +1057,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:coupon.field_coupon_program__validity_duration
 #: model_terms:ir.ui.view,arch_db:coupon.coupon_program_view_coupon_program_form
 msgid "Validity Duration"
-msgstr ""
+msgstr "Etibarlılıq müddəti"
 
 #. module: coupon
 #: model:ir.model.fields,help:coupon.field_coupon_program__validity_duration

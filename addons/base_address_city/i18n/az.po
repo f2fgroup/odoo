@@ -41,7 +41,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:base_address_city.view_city_tree
 #, python-format
 msgid "City"
-msgstr ""
+msgstr "Şəhər"
 
 #. module: base_address_city
 #: model:ir.model.fields,field_description:base_address_city.field_res_partner__city_id
@@ -93,7 +93,7 @@ msgstr ""
 #. module: base_address_city
 #: model:ir.model.fields,field_description:base_address_city.field_res_city__id
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #. module: base_address_city
 #: model:ir.model.fields,field_description:base_address_city.field_res_city____last_update
@@ -123,9 +123,9 @@ msgstr ""
 #. module: base_address_city
 #: model:ir.model.fields,field_description:base_address_city.field_res_city__state_id
 msgid "State"
-msgstr ""
+msgstr "Bölgə"
 
 #. module: base_address_city
 #: model:ir.model.fields,field_description:base_address_city.field_res_city__zipcode
 msgid "Zip"
-msgstr ""
+msgstr "ZİP"

@@ -3,6 +3,7 @@
 # 	* auth_totp_mail_enforce
 # 
 # Translators:
+# erpgo translator <jumshud@erpgo.az>, 2022
 # Jumshud Sultanov <cumshud@gmail.com>, 2022
 # 
 msgid ""
@@ -82,7 +83,7 @@ msgstr ""
 #: code:addons/auth_totp_mail_enforce/models/res_users.py:0
 #, python-format
 msgid "Cannot send email: user %s has no email address."
-msgstr ""
+msgstr "E-poçt göndərmək mümkün deyil: %s istifadəçi  email ünvanı yoxdur."
 
 #. module: auth_totp_mail_enforce
 #: model:ir.model.fields.selection,name:auth_totp_mail_enforce.selection__auth_totp_rate_limit_log__limit_type__code_check
@@ -130,7 +131,7 @@ msgstr ""
 #. module: auth_totp_mail_enforce
 #: model:ir.model.fields,field_description:auth_totp_mail_enforce.field_auth_totp_rate_limit_log__id
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #. module: auth_totp_mail_enforce
 #: model:ir.model.fields,field_description:auth_totp_mail_enforce.field_auth_totp_rate_limit_log__ip
@@ -155,7 +156,7 @@ msgstr "Son Yenilənmə tarixi"
 #. module: auth_totp_mail_enforce
 #: model_terms:ir.ui.view,arch_db:auth_totp_mail_enforce.auth_totp_mail_form
 msgid "Learn More"
-msgstr ""
+msgstr "Daha çox Məlumat Əldə et"
 
 #. module: auth_totp_mail_enforce
 #: model:ir.model.fields,field_description:auth_totp_mail_enforce.field_auth_totp_rate_limit_log__limit_type
@@ -175,7 +176,7 @@ msgstr "Emaili Göndər"
 #. module: auth_totp_mail_enforce
 #: model:ir.model.fields,field_description:auth_totp_mail_enforce.field_auth_totp_rate_limit_log__source
 msgid "Source"
-msgstr ""
+msgstr "Mənbə"
 
 #. module: auth_totp_mail_enforce
 #: model:mail.template,name:auth_totp_mail_enforce.mail_template_totp_mail_code

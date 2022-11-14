@@ -3,6 +3,7 @@
 # 	* board
 # 
 # Translators:
+# erpgo translator <jumshud@erpgo.az>, 2022
 # Jumshud Sultanov <cumshud@gmail.com>, 2022
 # 
 msgid ""
@@ -40,7 +41,7 @@ msgstr ""
 #: code:addons/board/static/src/legacy/xml/board.xml:0
 #, python-format
 msgid "&nbsp;"
-msgstr ""
+msgstr "&nbsp;"
 
 #. module: board
 #. openerp-web
@@ -122,12 +123,12 @@ msgstr ""
 #: code:addons/board/static/src/legacy/js/board_view.js:0
 #, python-format
 msgid "Edit Layout"
-msgstr ""
+msgstr "Tərtibatı Redaktə edin"
 
 #. module: board
 #: model:ir.model.fields,field_description:board.field_board_board__id
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #. module: board
 #. openerp-web
