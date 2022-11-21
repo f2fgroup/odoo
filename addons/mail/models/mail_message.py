@@ -856,11 +856,14 @@ class Message(models.Model):
                     })
 
             if message_sudo.model and message_sudo.res_id:
-                record_name = self.env[message_sudo.model] \
-                    .browse(message_sudo.res_id) \
-                    .sudo() \
-                    .with_prefetch(thread_ids_by_model_name[message_sudo.model]) \
-                    .display_name
+                try:
+                    record_name = self.env[message_sudo.model] \
+                        .browse(message_sudo.res_id) \
+                        .sudo() \
+                        .with_prefetch(thread_ids_by_model_name[message_sudo.model]) \
+                        .display_name
+                except Exception as err:
+                    record_name = str(err)
             else:
                 record_name = False
 
