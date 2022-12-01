@@ -63,7 +63,11 @@ var FieldHtml = basic_fields.DebouncedField.extend(TranslatableFieldMixin, {
      * @override
      */
     destroy: function () {
-        delete window.top[this._onUpdateIframeId];
+        try {
+            delete window.top[this._onUpdateIframeId];
+        } catch(err) {
+            console.error(err);
+        }
         if (this.$iframe) {
             this.$iframe.remove();
         }
