@@ -954,7 +954,16 @@ options.registry.BackgroundShape.include({
             return el;
         }
         return _getLastPreFilterLayerElement(this.$target);
-    }
+    },
+    /**
+     * @override
+     */
+    _removeShapeEl(shapeEl) {
+        this.trigger_up('widgets_stop_request', {
+            $target: $(shapeEl),
+        });
+        return this._super(...arguments);
+    },
 });
 
 options.registry.ReplaceMedia.include({
@@ -1808,10 +1817,17 @@ options.registry.CarouselItem = options.Class.extend({
         const $items = this.$carousel.find('.carousel-item');
         const newLength = $items.length - 1;
         if (!this.removing && newLength > 0) {
-            const $toDelete = $items.filter('.active');
+            // The active indicator is deleted to ensure that the other
+            // indicators will still work after the deletion.
+            const $toDelete = $items.filter('.active').add(this.$indicators.find('.active'));
             this.$carousel.one('active_slide_targeted.carousel_item_option', () => {
                 $toDelete.remove();
-                this.$indicators.find('li:last').remove();
+                // To ensure the proper functioning of the indicators, their
+                // attributes must reflect the position of the slides.
+                const indicatorsEls = this.$indicators[0].querySelectorAll('li');
+                for (let i = 0; i < indicatorsEls.length; i++) {
+                    indicatorsEls[i].setAttribute('data-slide-to', i);
+                }
                 this.$controls.toggleClass('d-none', newLength === 1);
                 this.$carousel.trigger('content_changed');
                 this.removing = false;
@@ -2154,6 +2170,24 @@ options.registry.HeaderNavbar = options.Class.extend({
     },
 
     //--------------------------------------------------------------------------
+    // Public
+    //--------------------------------------------------------------------------
+
+    /**
+     * @private
+     */
+    async updateUI() {
+        await this._super(...arguments);
+        // For all header templates except those in the following array, change
+        // the label of the option to "Mobile Alignment" (instead of
+        // "Alignment") because it only impacts the mobile view.
+        if (!["'default'", "'hamburger'", "'sidebar'"].includes(weUtils.getCSSVariableValue('header-template'))) {
+            const alignmentOptionTitleEl = this.el.querySelector('[data-name="header_alignment_opt"] we-title');
+            alignmentOptionTitleEl.textContent = _t("Mobile Alignment");
+        }
+    },
+
+    //--------------------------------------------------------------------------
     // Private
     //--------------------------------------------------------------------------
 
@@ -2173,6 +2207,14 @@ options.registry.HeaderNavbar = options.Class.extend({
                 return !weUtils.getCSSVariableValue('header-template').includes('hamburger');
             }
         }
+        if (widgetName === 'header_alignment_opt') {
+            if (!this.$target[0].querySelector('.o_offcanvas_menu_toggler')) {
+                // If mobile menu is "Default", hides the alignment option for
+                // "hamburger full" and "magazine" header templates.
+                return !["'hamburger-full'", "'magazine'"].includes(weUtils.getCSSVariableValue('header-template'));
+            }
+            return true;
+        }
         return this._super(...arguments);
     },
 });
@@ -2187,8 +2229,20 @@ const VisibilityPageOptionUpdate = options.Class.extend({
      */
     async start() {
         await this._super(...arguments);
-        const shown = await this._isShown();
-        this.trigger_up('snippet_option_visibility_update', {show: shown});
+        // When entering edit mode via the URL (enable_editor) the WebsiteNavbar
+        // is not yet ReadyForActions because it is waiting for its
+        // sub-component EditPageMenu to start edit mode. Then invisible blocks
+        // options start (so this option too). But for isShown() to work, the
+        // navbar must be ReadyForActions. This is the reason why we can't wait
+        // for isShown here, otherwise we would have a deadlock. On one hand the
+        // navbar waiting for the invisible snippets options to be started to be
+        // ReadyForActions and on the other hand this option which needs the
+        // navbar to be ReadyForActions to be started.
+        // TODO in master: Use the data-invisible system to get rid of this
+        // piece of code.
+        this._isShown().then(isShown => {
+            this.trigger_up('snippet_option_visibility_update', {show: isShown});
+        });
     },
     /**
      * @override
@@ -2426,7 +2480,12 @@ options.registry.MobileVisibility = options.Class.extend({
      * @see this.selectClass for parameters
      */
     showOnMobile(previewMode, widgetValue, params) {
-        const classes = `d-none d-md-${this.$target.css('display')}`;
+        // For compatibility with former implementation: remove the previously
+        // added `d-md-*` class if any, as it should now be `d-lg-*`.
+        if (widgetValue) {
+            this.$target[0].classList.remove(`d-md-${this.$target.css('display')}`);
+        }
+        const classes = `d-none d-lg-${this.$target.css('display')}`;
         this.$target.toggleClass(classes, !widgetValue);
     },
 
@@ -2441,7 +2500,7 @@ options.registry.MobileVisibility = options.Class.extend({
         if (methodName === 'showOnMobile') {
             const classList = [...this.$target[0].classList];
             return classList.includes('d-none') &&
-                classList.some(className => className.startsWith('d-md-')) ? '' : 'true';
+                classList.some(className => className.match(/^(d-md-|d-lg-)/g)) ? '' : 'true';
         }
         return await this._super(...arguments);
     },

@@ -1446,19 +1446,22 @@ var VideoWidget = MediaWidget.extend({
             this.$('input#o_video_hide_fullscreen, input#o_video_hide_yt_logo').closest('div').toggleClass('d-none', this.$('input#o_video_hide_controls').is(':checked'));
         }
 
+        this.error = false;
         var $content = query.$video;
         if (!$content) {
             switch (query.errorCode) {
                 case 0:
+                    this.error = _t("The provided url is not valid");
                     $content = $('<div/>', {
                         class: 'alert alert-danger o_video_dialog_iframe mb-2 mt-2',
-                        text: _t("The provided url is not valid"),
+                        text: this.error,
                     });
                     break;
                 case 1:
+                    this.error = _t("The provided url does not reference any supported video");
                     $content = $('<div/>', {
                         class: 'alert alert-warning o_video_dialog_iframe mb-2 mt-2',
-                        text: _t("The provided url does not reference any supported video"),
+                        text: this.error,
                     });
                     break;
             }
@@ -1556,7 +1559,8 @@ var VideoWidget = MediaWidget.extend({
             embedURL = `${matches.vine[0]}/embed/simple`;
             type = 'vine';
         } else if (matches.vimeo && matches.vimeo[3].length) {
-            const vimeoAutoplay = autoplay.replace('mute', 'muted');
+            const vimeoAutoplay = autoplay.replace('mute', 'muted')
+                .replace('autoplay=1', 'autoplay=1&autopause=0');
             embedURL = `//player.vimeo.com/video/${matches.vimeo[3]}${vimeoAutoplay}${loop}${controls}`;
             type = 'vimeo';
         } else if (matches.dailymotion && matches.dailymotion[2].length) {
