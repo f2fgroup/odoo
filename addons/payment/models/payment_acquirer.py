@@ -172,7 +172,7 @@ class PaymentAcquirer(models.Model):
         for acquirer in self:
             payment_method = self.env['account.payment.method.line'].search([
                 ('journal_id.company_id', '=', acquirer.company_id.id),
-                ('code', '=', acquirer.provider)
+                ('name', '=', acquirer.provider)
             ], limit=1)
             if payment_method:
                 acquirer.journal_id = payment_method.journal_id
@@ -183,7 +183,7 @@ class PaymentAcquirer(models.Model):
         for acquirer in self:
             payment_method_line = self.env['account.payment.method.line'].search([
                 ('journal_id.company_id', '=', acquirer.company_id.id),
-                ('code', '=', acquirer.provider)
+                ('name', '=', acquirer.provider)
             ], limit=1)
             if acquirer.journal_id:
                 if not payment_method_line:
