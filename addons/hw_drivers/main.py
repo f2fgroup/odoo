@@ -72,6 +72,7 @@ class Manager(Thread):
         Thread that will load interfaces and drivers and contact the odoo server with the updates
         """
 
+        _logger.info("IoT Box Image version: %s", helpers.get_version())
         helpers.check_git_branch()
         is_certificate_ok, certificate_details = helpers.get_certificate_status()
         if not is_certificate_ok:
@@ -86,9 +87,12 @@ class Manager(Thread):
 
         # Start the interfaces
         for interface in interfaces.values():
-            i = interface()
-            i.daemon = True
-            i.start()
+            try:
+                i = interface()
+                i.daemon = True
+                i.start()
+            except Exception as e:
+                _logger.error("Error in %s: %s", str(interface), e)
 
         # Check every 3 secondes if the list of connected devices has changed and send the updated
         # list to the connected DB.

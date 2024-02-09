@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import time
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
@@ -586,16 +586,61 @@ class TestLeaveRequests(TestHrHolidaysCommon):
             'date_to': datetime(2022, 3, 11, 23, 59, 59),
         })
         p_leave.company_id = other_company
+        self.user_employee.company_ids = [
+            (4, other_company.id),
+            (4, self.env.company.id),]
+        leave = self.env['hr.leave'].with_user(self.user_employee_id)\
+                .with_context(allowed_company_ids=[other_company.id, self.env.company.id])\
+                .create({
+                    'name': 'Holiday Request',
+                    'holiday_type': 'employee',
+                    'employee_id': self.employee_emp.id,
+                    'holiday_status_id': self.holidays_type_1.id,
+                    'date_from': datetime(2022, 3, 11),
+                    'date_to': datetime(2022, 3, 11, 23, 59, 59),
+                })
+        self.assertEqual(leave.number_of_days, 1)
 
-        leave = self.env['hr.leave'].with_user(self.user_employee_id).create({
+    def test_leave_with_public_holiday_other_company_differents_hours_per_weekday(self):
+        other_company = self.env['res.company'].create({
+            'name': 'Test Company',
+        })
+        # hours per day : 7.2h
+        # hours per friday : 5h
+        res_calendar_test = self.env['resource.calendar'].create({
+            'name': '35h calendar',
+            'attendance_ids': [
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 8, 'hour_to': 12, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Evening', 'dayofweek': '0', 'hour_from': 13, 'hour_to': 16, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 8, 'hour_to': 12, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Evening', 'dayofweek': '1', 'hour_from': 13, 'hour_to': 16, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 8, 'hour_to': 12, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Evening', 'dayofweek': '2', 'hour_from': 13, 'hour_to': 16, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 8, 'hour_to': 12, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Evening', 'dayofweek': '3', 'hour_from': 13, 'hour_to': 16, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 7.5, 'hour_to': 12, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Evening', 'dayofweek': '4', 'hour_from': 12.5, 'hour_to': 13, 'day_period': 'afternoon'})
+            ]
+        })
+        self.user_employee.resource_calendar_id = res_calendar_test
+        # Create a public holiday for the second company
+        p_leave = self.env['resource.calendar.leaves'].create({
+            'date_from': datetime(2022, 3, 11),
+            'date_to': datetime(2022, 3, 11, 23, 59, 59),
+        })
+        p_leave.company_id = other_company
+        self.user_employee.company_ids = [
+            (4, other_company.id),
+            (4, self.env.company.id),]
+        leave = self.env['hr.leave'].with_user(self.user_employee_id).with_context(allowed_company_ids=[other_company.id, self.env.company.id]).create({
             'name': 'Holiday Request',
             'holiday_type': 'employee',
-            'employee_id': self.employee_emp.id,
+            'employee_id': self.employee_emp_id,
             'holiday_status_id': self.holidays_type_1.id,
             'date_from': datetime(2022, 3, 11),
             'date_to': datetime(2022, 3, 11, 23, 59, 59),
         })
-        self.assertEqual(leave.number_of_days, 1)
+        self.assertEqual(leave.number_of_hours_display, 5)
 
     def test_several_allocations(self):
         allocation_vals = {
@@ -896,3 +941,49 @@ class TestLeaveRequests(TestHrHolidaysCommon):
 
         with self.assertRaises(ValidationError):
             self.env['hr.leave'].with_user(self.user_employee_id).create(trigger_error_leave)
+
+    def test_current_leave_status(self):
+        types = ('no_validation', 'manager', 'hr', 'both')
+        employee = self.employee_emp
+
+        def run_validation_flow(leave_validation_type):
+            LeaveType = self.env['hr.leave.type'].with_user(self.user_hrmanager_id)
+            leave_type = LeaveType.with_context(tracking_disable=True).create({
+                'name': leave_validation_type.capitalize(),
+                'leave_validation_type': leave_validation_type,
+                'requires_allocation': 'no',
+            })
+            current_leave = self.env['hr.leave'].with_user(self.user_employee_id).create({
+                'name': 'Holiday Request',
+                'holiday_type': 'employee',
+                'employee_id': employee.id,
+                'holiday_status_id': leave_type.id,
+                'date_from': fields.Date.today(),
+                'date_to': fields.Date.today() + timedelta(days=2),
+                'number_of_days': 2,
+            })
+
+            if leave_validation_type in ('manager', 'both'):
+                self.assertFalse(employee.is_absent)
+                self.assertFalse(employee.current_leave_id)
+                self.assertEqual(employee.filtered_domain([('is_absent', '=', False)]), employee)
+                self.assertFalse(employee.filtered_domain([('is_absent', '=', True)]))
+                current_leave.with_user(self.user_hruser_id).action_approve()
+
+            if leave_validation_type in ('hr', 'both'):
+                self.assertFalse(employee.is_absent)
+                self.assertFalse(employee.current_leave_id)
+                self.assertEqual(employee.filtered_domain([('is_absent', '=', False)]), employee)
+                self.assertFalse(employee.filtered_domain([('is_absent', '=', True)]))
+                current_leave.with_user(self.user_hrmanager_id).action_validate()
+
+            self.assertTrue(employee.is_absent)
+            self.assertEqual(employee.current_leave_id, current_leave.holiday_status_id)
+            self.assertFalse(employee.filtered_domain([('is_absent', '=', False)]))
+            self.assertEqual(employee.filtered_domain([('is_absent', '=', True)]), employee)
+
+            raise RuntimeError()
+
+        for leave_validation_type in types:
+            with self.assertRaises(RuntimeError), self.env.cr.savepoint():
+                run_validation_flow(leave_validation_type)
