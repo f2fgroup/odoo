@@ -45,8 +45,8 @@ import {
     getCursorDirection,
 } from '../utils/utils.js';
 
-const TEXT_CLASSES_REGEX = /\btext-[^\s]*\b/g;
-const BG_CLASSES_REGEX = /\bbg-[^\s]*\b/g;
+const TEXT_CLASSES_REGEX = /\btext-[^\s]*\b/;
+const BG_CLASSES_REGEX = /\bbg-[^\s]*\b/;
 
 function insert(editor, data, isText = true) {
     if (!data) {
@@ -285,9 +285,9 @@ function hasColor(element, mode) {
         }
     }
     return (
-        (style[mode] && style[mode] !== 'inherit' && style[mode] !== parent.style[mode]) ||
+        (style[mode] && style[mode] !== 'inherit' && (!parent || style[mode] !== parent.style[mode])) ||
         (classRegex.test(element.className) &&
-            getComputedStyle(element)[mode] !== getComputedStyle(parent)[mode])
+            (!parent || getComputedStyle(element)[mode] !== getComputedStyle(parent)[mode]))
     );
 }
 function addColumn(editor, beforeOrAfter) {
@@ -304,7 +304,11 @@ function addRow(editor, beforeOrAfter) {
     if (!row) return;
     const newRow = document.createElement('tr');
     const cells = row.querySelectorAll('td');
-    newRow.append(...Array.from(Array(cells.length)).map(() => document.createElement('td')));
+    newRow.append(...Array.from(Array(cells.length)).map(() => {
+        const td = document.createElement('td');
+        td.append(document.createElement('br'));
+        return td;
+    }));
     row[beforeOrAfter](newRow);
 }
 function deleteTable(editor, table) {
@@ -345,34 +349,28 @@ export const editorCommands = {
 
     // Change tags
     setTag(editor, tagName) {
-        const restoreCursor = preserveCursor(editor.document);
         const range = getDeepRange(editor.editable, { correctTripleClick: true });
         const selectedBlocks = [...new Set(getTraversedNodes(editor.editable, range).map(closestBlock))];
         const deepestSelectedBlocks = selectedBlocks.filter(block => (
             !descendants(block).some(descendant => selectedBlocks.includes(descendant))
         ));
+        let { startContainer, startOffset, endContainer, endOffset } = range;
+        const startContainerChild = startContainer.firstChild;
+        const endContainerChild = endContainer.lastChild;
         for (const block of deepestSelectedBlocks) {
             if (
                 ['P', 'PRE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE'].includes(
                     block.nodeName,
                 )
             ) {
-                setSelection(block, 0, block, nodeSize(block));
-                editor.historyPauseSteps();
-                // Keep the alignment and remove rest of the applied styles.
-                const textAlign = block.style.textAlign;
-                editor.execCommand('removeFormat');
-                if (textAlign) {
-                    block.style.textAlign = textAlign;
-                }
-                editor.historyUnpauseSteps();
                 const inLI = block.closest('li');
                 if (inLI && tagName === "P") {
                     inLI.oToggleList(0);
                 } else {
+                    block.classList.remove('h1', 'h2', 'h3', 'h4', 'h5', 'h6');
                     setTagName(block, tagName);
                 }
-            }  else {
+            } else {
                 // eg do not change a <div> into a h1: insert the h1
                 // into it instead.
                 const newBlock = editor.document.createElement(tagName);
@@ -381,7 +379,17 @@ export const editorCommands = {
                 children.forEach(child => newBlock.appendChild(child));
             }
         }
-        restoreCursor();
+        const isContextBlock = container => ['TD', 'DIV', 'LI'].includes(container.nodeName);
+        if (!startContainer.isConnected || isContextBlock(startContainer)) {
+            startContainer = startContainerChild.parentNode;
+        }
+        if (!endContainer.isConnected || isContextBlock(endContainer)) {
+            endContainer = endContainerChild.parentNode;
+        }
+        const newRange = new Range();
+        newRange.setStart(startContainer, startOffset);
+        newRange.setEnd(endContainer, endOffset);
+        getDeepRange(editor.editable, { range: newRange, select: true });
         editor.historyStep();
     },
 
@@ -401,7 +409,11 @@ export const editorCommands = {
         const changedElements = [];
         const defaultDirection = editor.options.direction;
         const shouldApplyStyle = !isSelectionFormat(editor.editable, 'switchDirection');
-        for (const block of new Set(selectedTextNodes.map(textNode => closestBlock(textNode)))) {
+        let blocks = new Set(selectedTextNodes.map(textNode => closestElement(textNode, 'ul,ol') || closestBlock(textNode)));
+        blocks.forEach(block => {
+            blocks = [...blocks, ...block.querySelectorAll('ul,ol')];
+        })
+        for (const block of blocks) {
             if (!shouldApplyStyle) {
                 block.removeAttribute('dir');
             } else {
@@ -420,11 +432,21 @@ export const editorCommands = {
         }
     },
     removeFormat: editor => {
+        const textAlignStyles = new Map();
+        getTraversedNodes(editor.editable).forEach((element) => {
+            const block = closestBlock(element);
+            if (block.style.textAlign) {
+                textAlignStyles.set(block, block.style.textAlign);
+            }
+        });
         editor.document.execCommand('removeFormat');
         for (const node of getTraversedNodes(editor.editable)) {
             // The only possible background image on text is the gradient.
             closestElement(node).style.backgroundImage = '';
         }
+        textAlignStyles.forEach((textAlign, block) => {
+            block.style.setProperty('text-align', textAlign);
+        });
     },
 
     // Align
@@ -497,12 +519,13 @@ export const editorCommands = {
         const end = leftLeafFirstPath(...pos1).next().value;
         const li = new Set();
         for (const node of leftLeafFirstPath(...pos2)) {
-            const cli = closestBlock(node);
+            const cli = closestElement(node,'li');
             if (
                 cli &&
                 cli.tagName == 'LI' &&
                 !li.has(cli) &&
-                !cli.classList.contains('oe-nested')
+                !cli.classList.contains('oe-nested') &&
+                !cli.classList.contains('nav-item')
             ) {
                 li.add(cli);
             }
@@ -521,14 +544,23 @@ export const editorCommands = {
         const li = new Set();
         const blocks = new Set();
 
-        for (const node of getTraversedNodes(editor.editable)) {
+        const selectedBlocks = getTraversedNodes(editor.editable);
+        const deepestSelectedBlocks = selectedBlocks.filter(block => (
+            !descendants(block).some(descendant => selectedBlocks.includes(descendant))
+        ));
+        for (const node of deepestSelectedBlocks) {
             if (node.nodeType === Node.TEXT_NODE && !isVisibleStr(node)) {
                 node.remove();
             } else {
-                const block = closestBlock(node);
-                if (!['OL', 'UL'].includes(block.tagName)) {
-                    const ublock = block.closest('ol, ul');
-                    ublock && getListMode(ublock) == mode ? li.add(block) : blocks.add(block);
+                // Ensure nav-item lists are excluded from toggling
+                const isNavItemList = node => node.nodeName === 'LI' && node.classList.contains('nav-item');
+                let nodeToToggle = closestBlock(node);
+                nodeToToggle = isNavItemList(nodeToToggle) ? node : nodeToToggle;
+                if (!['OL', 'UL'].includes(nodeToToggle.tagName)) {
+                    const closestLi = closestElement(nodeToToggle, 'li');
+                    nodeToToggle = closestLi && !isNavItemList(closestLi) ? closestLi : nodeToToggle;
+                    const ublock = nodeToToggle.nodeName === 'LI' && nodeToToggle.closest('ol, ul');
+                    ublock && getListMode(ublock) == mode ? li.add(nodeToToggle) : blocks.add(nodeToToggle);
                 }
             }
         }
@@ -571,62 +603,78 @@ export const editorCommands = {
         if (isEmptyBlock(range.endContainer)) {
             selectedNodes.push(range.endContainer, ...descendants(range.endContainer));
         }
-        const fonts = selectedNodes.flatMap(node => {
-            let font = closestElement(node, 'font') || closestElement(node, 'span');
-            const children = font && descendants(font);
-            if (font && (font.nodeName === 'FONT' || (font.nodeName === 'SPAN' && font.style[mode]))) {
-                // Partially selected <font>: split it.
-                const selectedChildren = children.filter(child => selectedNodes.includes(child));
-                if (selectedChildren.length) {
-                    font = splitAroundUntil(selectedChildren, font);
-                } else {
-                    font = [];
-                }
-            } else if ((node.nodeType === Node.TEXT_NODE && isVisibleStr(node))
-                    || node.nodeName === "BR"
-                    || (node.nodeType === Node.ELEMENT_NODE &&
+
+        function getFonts(selectedNodes) {
+            return selectedNodes.flatMap(node => {
+                let font = closestElement(node, "font") || closestElement(node, "span");
+                const children = font && descendants(font);
+                if (font && (font.nodeName === 'FONT' || (font.nodeName === 'SPAN' && font.style[mode]))) {
+                    // Partially selected <font>: split it.
+                    const selectedChildren = children.filter(child => selectedNodes.includes(child));
+                    if (selectedChildren.length) {
+                        font = splitAroundUntil(selectedChildren, font);
+                    } else {
+                        font = [];
+                    }
+                } else if (
+                    (node.nodeType === Node.TEXT_NODE && isVisibleStr(node)) ||
+                    (isEmptyBlock(node.parentNode)) ||
+                    (node.nodeType === Node.ELEMENT_NODE &&
+                        node.nodeName !== 'FIGURE' &&
                         ['inline', 'inline-block'].includes(getComputedStyle(node).display) &&
                         isVisibleStr(node.textContent) &&
                         !node.classList.contains('btn') &&
-                        !node.querySelector('font'))) {
-                // Node is a visible text or inline node without font nor a button:
-                // wrap it in a <font>.
-                const previous = node.previousSibling;
-                const classRegex = mode === 'color' ? BG_CLASSES_REGEX : TEXT_CLASSES_REGEX;
-                if (
-                    previous &&
-                    previous.nodeName === 'FONT' &&
-                    !previous.style[mode === 'color' ? 'backgroundColor' : 'color'] &&
-                    !classRegex.test(previous.className) &&
-                    selectedNodes.includes(previous.firstChild) &&
-                    selectedNodes.includes(previous.lastChild)
+                        !node.querySelector('font'))
                 ) {
-                    // Directly follows a fully selected <font> that isn't
-                    // colored in the other mode: append to that.
-                    font = previous;
+                    // Node is a visible text or inline node without font nor a button:
+                    // wrap it in a <font>.
+                    const previous = node.previousSibling;
+                    const classRegex = mode === 'color' ? BG_CLASSES_REGEX : TEXT_CLASSES_REGEX;
+                    if (
+                        previous &&
+                        previous.nodeName === 'FONT' &&
+                        !previous.style[mode === 'color' ? 'backgroundColor' : 'color'] &&
+                        !classRegex.test(previous.className) &&
+                        selectedNodes.includes(previous.firstChild) &&
+                        selectedNodes.includes(previous.lastChild)
+                    ) {
+                        // Directly follows a fully selected <font> that isn't
+                        // colored in the other mode: append to that.
+                        font = previous;
+                    } else {
+                        // No <font> found: insert a new one.
+                        font = document.createElement('font');
+                        node.after(font);
+                    }
+                    if (node.textContent) {
+                        font.appendChild(node);
+                    } else {
+                        fillEmpty(font);
+                    }
                 } else {
-                    // No <font> found: insert a new one.
-                    font = document.createElement('font');
-                    node.after(font);
+                    font = []; // Ignore non-text or invisible text nodes.
                 }
-                if (node.textContent) {
-                    font.appendChild(node);
-                } else {
-                    fillEmpty(font);
-                }
-            } else {
-                font = []; // Ignore non-text or invisible text nodes.
-            }
-            return font;
-        });
+                return font;
+            });
+        }
+
+        let fonts = getFonts(selectedNodes);
+        // Dirty fix as the previous call could have unconnected elements
+        // because of the `splitAroundUntil`. Another call should provide he
+        // correct list of fonts.
+        if (!fonts.every((font) => font.isConnected)) {
+            fonts = getFonts(selectedNodes);
+        }
         // Color the selected <font>s and remove uncolored fonts.
-        for (const font of new Set(fonts)) {
+        const fontsSet = new Set(fonts);
+        for (const font of fontsSet) {
             colorElement(font, color, mode);
-            if (!hasColor(font, mode) && !font.hasAttribute('style')) {
+            if ((!hasColor(font, 'color') && !hasColor(font,'backgroundColor')) && (!font.hasAttribute('style') || !color)) {
                 for (const child of [...font.childNodes]) {
                     font.parentNode.insertBefore(child, font);
                 }
                 font.parentNode.removeChild(font);
+                fontsSet.delete(font);
             }
         }
         restoreCursor();
@@ -638,7 +686,7 @@ export const editorCommands = {
             newSelection.removeAllRanges();
             newSelection.addRange(range);
         }
-        return fonts;
+        return [...fontsSet];
     },
     // Table
     insertTable: (editor, { rowNumber = 2, colNumber = 2 } = {}) => {

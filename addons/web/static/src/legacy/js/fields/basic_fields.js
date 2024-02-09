@@ -859,12 +859,12 @@ var FieldDateRange = InputField.extend({
     _getDateRangeFromInputField() {
         let startDate, endDate;
         if (this.relatedEndDate) {
-            startDate = this.value;
-            endDate = this.recordData[this.relatedEndDate];
+            startDate = this._getValue();
+            endDate = field_utils.parse[this.formatType](this.recordData[this.relatedEndDate]);
         }
         if (this.relatedStartDate) {
-            startDate = this.recordData[this.relatedStartDate];
-            endDate = this.value;
+            startDate = field_utils.parse[this.formatType](this.recordData[this.relatedStartDate]);
+            endDate = this._getValue();
         }
         return [startDate, endDate];
     },
@@ -1804,7 +1804,15 @@ var FieldPhone = FieldEmail.extend({
      * @private
      */
     _renderReadonly: function () {
-        this._super();
+        if (this.value) {
+            this.el.innerHTML = '';
+            this.el.classList.add("o_form_uri", "o_text_overflow");
+            const anchorEl = Object.assign(document.createElement('a'), {
+                text: this.value,
+                href: `${this.prefix}:${this.value.replace(/\s+/g, "")}`,
+            });
+            this.el.appendChild(anchorEl);
+        }
 
         // This class should technically be there in case of a very very long
         // phone number, but it breaks the o_row mechanism, which is more

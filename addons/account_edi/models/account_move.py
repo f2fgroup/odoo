@@ -5,6 +5,7 @@ from collections import defaultdict
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+from odoo.tools import frozendict
 
 
 class AccountMove(models.Model):
@@ -241,9 +242,6 @@ class AccountMove(models.Model):
         '''
         self.ensure_one()
 
-        def _serialize_python_dictionary(vals):
-            return '-'.join(str(vals[k]) for k in sorted(vals.keys()))
-
         def default_grouping_key_generator(tax_values):
             return {'tax': tax_values['tax_id']}
 
@@ -402,7 +400,7 @@ class AccountMove(models.Model):
 
             for tax_values in tax_values_list:
                 grouping_key = grouping_key_generator(tax_values)
-                serialized_grouping_key = _serialize_python_dictionary(grouping_key)
+                serialized_grouping_key = frozendict(grouping_key)
                 key_by_tax[tax_values['tax_id']] = serialized_grouping_key
 
                 # Add to invoice line global tax amounts.
@@ -458,9 +456,9 @@ class AccountMove(models.Model):
         invoices is changing.
         '''
         edi_document_vals_list = []
+        to_remove = self.env['account.edi.document']
         for payment in self:
-            edi_formats = payment._get_reconciled_invoices().journal_id.edi_format_ids + payment.edi_document_ids.edi_format_id
-            edi_formats = self.env['account.edi.format'].browse(edi_formats.ids) # Avoid duplicates
+            edi_formats = payment._get_reconciled_invoices().journal_id.edi_format_ids | payment.edi_document_ids.edi_format_id
             for edi_format in edi_formats:
                 existing_edi_document = payment.edi_document_ids.filtered(lambda x: x.edi_format_id == edi_format)
 
@@ -478,12 +476,9 @@ class AccountMove(models.Model):
                             'state': 'to_send',
                         })
                 elif existing_edi_document:
-                    existing_edi_document.write({
-                        'state': False,
-                        'error': False,
-                        'blocking_level': False,
-                    })
+                    to_remove |= existing_edi_document
 
+        to_remove.unlink()
         self.env['account.edi.document'].create(edi_document_vals_list)
         self.edi_document_ids._process_documents_no_web_services()
 
@@ -555,6 +550,7 @@ class AccountMove(models.Model):
         res = super().button_draft()
 
         self.edi_document_ids.write({'error': False, 'blocking_level': False})
+        self.edi_document_ids.filtered(lambda doc: doc.state == 'to_send').unlink()
 
         return res
 
@@ -683,39 +679,15 @@ class AccountMoveLine(models.Model):
         # documents during the reconciliation.
         all_lines = self + self.matched_debit_ids.debit_move_id + self.matched_credit_ids.credit_move_id
         payments = all_lines.move_id.filtered(lambda move: move.payment_id or move.statement_line_id)
-
-        invoices_per_payment_before = {pay: pay._get_reconciled_invoices() for pay in payments}
         res = super().reconcile()
-        invoices_per_payment_after = {pay: pay._get_reconciled_invoices() for pay in payments}
-
         changed_payments = self.env['account.move']
-        for payment, invoices_after in invoices_per_payment_after.items():
-            invoices_before = invoices_per_payment_before[payment]
 
-            if set(invoices_after.ids) != set(invoices_before.ids):
-                changed_payments |= payment
-        changed_payments._update_payments_edi_documents()
-
-        return res
-
-    def remove_move_reconcile(self):
-        # OVERRIDE
-        # When a payment has been sent to the government, it usually contains some information about reconciled
-        # invoices. If the user breaks a reconciliation, the related payments must be cancelled properly and then, a new
-        # electronic document must be generated.
-        all_lines = self + self.matched_debit_ids.debit_move_id + self.matched_credit_ids.credit_move_id
-        payments = all_lines.move_id.filtered(lambda move: move.payment_id or move.statement_line_id)
-
-        invoices_per_payment_before = {pay: pay._get_reconciled_invoices() for pay in payments}
-        res = super().remove_move_reconcile()
-        invoices_per_payment_after = {pay: pay._get_reconciled_invoices() for pay in payments}
-
-        changed_payments = self.env['account.move']
-        for payment, invoices_after in invoices_per_payment_after.items():
-            invoices_before = invoices_per_payment_before[payment]
-
-            if set(invoices_after.ids) != set(invoices_before.ids):
-                changed_payments |= payment
+        for payment in payments:
+            amls = payment.line_ids.filtered(lambda x: x.account_id.user_type_id.type == 'receivable')
+            if all(amls.mapped('reconciled')):
+                matched_invoices = payment._get_reconciled_invoices()
+                if all(inv.edi_state == 'sent' for inv in matched_invoices):
+                    changed_payments |= payment
         changed_payments._update_payments_edi_documents()
 
         return res

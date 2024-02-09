@@ -113,7 +113,7 @@ ol {
 
 /* Checklist */
 ul {
-    .o_checklist {
+    &.o_checklist {
         > li {
             list-style: none;
             position: relative;
@@ -141,6 +141,13 @@ ul {
     }
 }
 
+blockquote {
+    padding: $spacer/2 $spacer;
+    border-left: 5px solid;
+    border-color: gray('300');
+    font-style: italic;
+}
+
 // Wkhtmltopdf doesn't handle flexbox properly, both the content
 // of columns and columns themselves does not wrap over new lines
 // when needed: the font of the pdf will reduce to make the content
@@ -152,4 +159,8 @@ ul {
 .col-auto{
     -webkit-box-flex: 1 !important;
     width: 100% !important;
+}
+
+li.oe-nested {
+    display: block;
 }

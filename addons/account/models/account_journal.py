@@ -310,7 +310,7 @@ class AccountJournal(models.Model):
         These will be then used to display or not payment method specific fields in the view.
         """
         for journal in self:
-            codes = [line.code for line in journal.inbound_payment_method_line_ids + journal.outbound_payment_method_line_ids]
+            codes = [line.code for line in journal.inbound_payment_method_line_ids + journal.outbound_payment_method_line_ids if line.code]
             journal.selected_payment_method_codes = ',' + ','.join(codes) + ','
 
     @api.depends('company_id', 'type')
@@ -972,3 +972,11 @@ class AccountJournal(models.Model):
         if self.type not in journal_types:
             return False
         return True
+
+    def _process_reference_for_sale_order(self, order_reference):
+        '''
+        returns the order reference to be used for the payment.
+        Hook to be overriden: see l10n_ch for an example.
+        '''
+        self.ensure_one()
+        return order_reference
