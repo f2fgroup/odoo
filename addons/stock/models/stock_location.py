@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+import logging
 
 import calendar
 
@@ -11,6 +12,8 @@ from odoo.exceptions import UserError
 from odoo.tools.misc import groupby
 from odoo.osv import expression
 from odoo.tools.float_utils import float_compare
+
+_logger = logging.getLogger(__name__)
 
 
 class Location(models.Model):
@@ -204,6 +207,8 @@ class Location(models.Model):
                 internal_children_locations = children_location.filtered(lambda l: l.usage == 'internal')
                 children_quants = self.env['stock.quant'].search(['&', '|', ('quantity', '!=', 0), ('reserved_quantity', '!=', 0), ('location_id', 'in', internal_children_locations.ids)])
                 if children_quants and values['active'] == False:
+                    _logger.info('-----------------------quant = %s' % children_quants)
+                    
                     raise UserError(_('You still have some product in locations %s') %
                         (', '.join(children_quants.mapped('location_id.display_name'))))
                 else:
