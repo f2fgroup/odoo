@@ -207,8 +207,6 @@ class Location(models.Model):
                 internal_children_locations = children_location.filtered(lambda l: l.usage == 'internal')
                 children_quants = self.env['stock.quant'].search(['&', '|', ('quantity', '!=', 0), ('reserved_quantity', '!=', 0), ('location_id', 'in', internal_children_locations.ids)])
                 if children_quants and values['active'] == False:
-                    _logger.info('-----------------------quant = %s' % children_quants)
-                    
                     raise UserError(_('You still have some product in locations %s') %
                         (', '.join(children_quants.mapped('location_id.display_name'))))
                 else:
