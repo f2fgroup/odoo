@@ -494,7 +494,7 @@ var dom = {
             text: options && options.text || '',
         });
         if (!options || !options.text) {
-            $label.html('&#8203;'); // BS checkboxes need some label content (so
+            $label.text('\u{200B}'); // BS checkboxes need some label content (so
                                 // add a zero-width space when there is no text)
         }
         if (options && options.prop) {

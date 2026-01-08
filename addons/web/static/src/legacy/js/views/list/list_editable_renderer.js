@@ -611,7 +611,7 @@ ListRenderer.include({
         const relativeWidths = [];
         this.columns.forEach(column => {
             const th = this._getColumnHeader(column);
-            if (th.offsetParent === null) {
+            if (!th.checkVisibility()) {
                 relativeWidths.push(false);
             } else {
                 const width = this._getColumnWidth(column);
@@ -689,7 +689,7 @@ ListRenderer.include({
      * @private
      */
     _freezeColumnWidths: function () {
-        if (!this.columnWidths && this.el.offsetParent === null) {
+        if (!this.columnWidths && !this.el.checkVisibility()) {
             // there is no record nor widths to restore or the list is not visible
             // -> don't force column's widths w.r.t. their label
             return;
