@@ -581,10 +581,10 @@ var ListRenderer = BasicRenderer.extend({
         if (field.type !== 'boolean') {
             title = formatter(value, field, _.extend(formatOptions, {escape: false}));
         }
-        if (!(formattedValue instanceof jQuery)) {
+        /*if (!(formattedValue instanceof jQuery)) {
             formattedValue = $('<span>').text(formattedValue);
-        }
-        return $td.append(formattedValue).attr('title', title).attr('name', name);
+        }*/
+        return $td.html(formattedValue).attr('title', title).attr('name', name);
     },
     /**
      * Renders the button element associated to the given node and record.
