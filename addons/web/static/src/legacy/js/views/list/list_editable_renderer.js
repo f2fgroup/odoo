@@ -689,7 +689,11 @@ ListRenderer.include({
      * @private
      */
     _freezeColumnWidths: function () {
-        if (!this.columnWidths && !this.el.checkVisibility()) {
+        if (!this.el || !this.el.checkVisibility) {
+            // not managed
+            return false;
+        }
+        if (!this.columnWidths && !this.el || !this.el.checkVisibility()) {
             // there is no record nor widths to restore or the list is not visible
             // -> don't force column's widths w.r.t. their label
             return;
